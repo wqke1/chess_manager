@@ -1,0 +1,79 @@
+<h1>
+  <%= @game.white %> (<%= @game.white_rating %>) vs <%= @game.black %> (<%= @game.black_rating %>)
+  <small>
+    <%= @game.time_class %> · <%= l @game.played_at, format: :short %> · <%= @game.opening %> ·
+    <%= link_to "chess.com ↗", @game.url, target: "_blank" %> ·
+    <%= button_to "Réanalyser", analyze_game_path(@game), method: :post, form: { style: "display:inline" }, class: "linkish" %>
+  </small>
+</h1>
+
+<% unless @game.analyzed? %>
+  <meta http-equiv="refresh" content="5">
+  <p>Analyse en cours (la page se rafraîchit toute seule)…</p>
+<% else %>
+<% a = @game.analysis %>
+<div class="summary">
+  <% %w[white black].each do |c| %>
+    <div class="side <%= c %> <%= 'me' if c == @game.color %>">
+      <strong><%= c == "white" ? @game.white : @game.black %></strong>
+      <span class="acc"><%= a[c]["accuracy"] %>%</span>
+      <ul>
+        <% a[c]["counts"].each do |k, v| %>
+          <li class="cls-<%= k.parameterize %>"><%= k %> <b><%= v %></b></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>
+
+<div class="review" data-controller="board"
+     data-board-moves-value="<%= a["moves"].to_json %>"
+     data-board-orientation-value="<%= @game.color %>">
+  <div class="board-wrap">
+    <div class="eval-bar"><div class="eval-fill" data-board-target="evalFill"></div><span data-board-target="evalText">0.0</span></div>
+    <div class="board" data-board-target="board"></div>
+  </div>
+  <div class="moves">
+    <div class="controls">
+      <button data-action="board#first">⏮</button>
+      <button data-action="board#prev">◀</button>
+      <button data-action="board#next">▶</button>
+      <button data-action="board#last">⏭</button>
+      <button data-action="board#flip">⇅</button>
+      <button data-action="board#togglePlay" data-board-target="play">▶ auto</button>
+    </div>
+    <div class="comment" data-board-target="comment"></div>
+    <div class="variation" data-board-target="variation" hidden>
+      <div class="var-head">
+        <span>Variante</span>
+        <button data-action="board#undoVariation">↶ annuler</button>
+        <button data-action="board#exitVariation">↩ retour à la partie</button>
+      </div>
+      <div class="var-moves" data-board-target="variationMoves"></div>
+      <div class="var-eval" data-board-target="variationEval"></div>
+    </div>
+    <p class="hint">Joue un coup sur l'échiquier pour tester une variante. ← → pour naviguer, espace pour la lecture auto.</p>
+    <ol data-board-target="list">
+      <% a["moves"].each_slice(2).with_index(1) do |(w, b), n| %>
+        <li>
+          <span class="n"><%= n %>.</span>
+          <% [w, b].compact.each do |m| %>
+            <span class="mv cls-<%= m["class"].parameterize %>" data-ply="<%= m["ply"] %>" data-action="click->board#goto"><%= m["san"] %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  </div>
+  <% if ENV["ANTHROPIC_API_KEY"].present? %>
+  <div class="chat">
+    <div class="chat-log" data-board-target="chatLog">
+      <div class="msg assistant">Pose-moi une question sur la position affichée : « pourquoi c'est une gaffe ? », « quel est le plan ici ? », « que se passe-t-il si je prends en d5 ? »…</div>
+    </div>
+    <form class="chat-form" data-action="submit->board#ask">
+      <input type="text" data-board-target="chatInput" placeholder="Ta question sur cette position…" autocomplete="off">
+      <button type="submit" data-board-target="chatSend">Envoyer</button>
+    </form>
+  </div>
+  <% end %>
+</div>
+<% end %>

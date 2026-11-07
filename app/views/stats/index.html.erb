@@ -1,0 +1,55 @@
+<div class="toolbar">
+  <span class="filters">
+    <%= link_to "Toutes", stats_path, class: (params[:time_class].blank? ? "on" : nil) %>
+    <% %w[bullet blitz rapid daily].each do |tc| %>
+      <%= link_to tc, stats_path(time_class: tc), class: (params[:time_class] == tc ? "on" : nil) %>
+    <% end %>
+  </span>
+</div>
+
+<h2>Par mois</h2>
+<table>
+  <thead><tr><th>Mois</th><th>Parties</th><th>Victoires</th><th>Nulles</th><th>Elo (fin)</th><th>Précision moy.</th><th>Gaffes / partie</th></tr></thead>
+  <tbody>
+    <% @by_month.each do |month, s| %>
+      <tr>
+        <td><%= month %></td><td><%= s[:games] %></td>
+        <td><%= s[:wins] %> (<%= (100.0 * s[:wins] / s[:games]).round %>%)</td>
+        <td><%= s[:draws] %></td><td><%= s[:rating] %></td>
+        <td><%= s[:accuracy] ? "#{s[:accuracy]}%" : "—" %></td>
+        <td><%= s[:blunders] || "—" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Par ouverture (≥ 3 parties)</h2>
+<table>
+  <thead><tr><th>Ouverture</th><th>Parties</th><th>Victoires</th><th>Précision moy.</th><th>Gaffes / partie</th></tr></thead>
+  <tbody>
+    <% @by_opening.each do |name, s| %>
+      <tr>
+        <td><%= name %></td><td><%= s[:games] %></td>
+        <td><%= s[:wins] %> (<%= (100.0 * s[:wins] / s[:games]).round %>%)</td>
+        <td><%= s[:accuracy] ? "#{s[:accuracy]}%" : "—" %></td>
+        <td><%= s[:blunders] || "—" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Dernières gaffes</h2>
+<table>
+  <thead><tr><th>Date</th><th>Partie</th><th>Coup</th><th>Il fallait</th><th>Perte</th></tr></thead>
+  <tbody>
+    <% @mistakes.each do |g, m| %>
+      <tr>
+        <td><%= l g.played_at, format: :short %></td>
+        <td><%= link_to "vs #{g.opponent}", game_path(g, anchor: "ply-#{m['ply']}") %></td>
+        <td><%= m["number"] %><%= m["color"] == "white" ? "." : "..." %> <%= m["san"] %></td>
+        <td><%= m["best"] %></td>
+        <td>-<%= m["loss"].round %>%</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
